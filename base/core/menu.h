@@ -45,6 +45,7 @@ namespace T
 	void LegitBot();
 	void Visuals();
 	void Miscellaneous();
+	void Configs();
 
 	/* @section: values */
 	// current selected sub-tab in visuals tab

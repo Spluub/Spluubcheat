@@ -95,9 +95,9 @@ void MENU::MainWindow(IDirect3DDevice9* pDevice)
 			if (I::Engine->IsInGame())
 				ImGui::TextColored(F::bLastSendPacket ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 0.0f, 0.0f, 1.0f), Q_XOR("send packets"));
 
-			static ImVec2 vecNameSize = ImGui::CalcTextSize(Q_XOR("qo0 base | " __DATE__));
+			static ImVec2 vecNameSize = ImGui::CalcTextSize(Q_XOR("Spluubcheat with qo0 base | " __DATE__));
 			ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - vecNameSize.x);
-			ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), Q_XOR("qo0 base | " __DATE__));
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), Q_XOR("Spluubcheat with qo0 base | " __DATE__));
 
 			ImGui::PopFont();
 			ImGui::EndMainMenuBar();
@@ -114,7 +114,7 @@ void MENU::MainWindow(IDirect3DDevice9* pDevice)
 	{
 		ImGui::SetNextWindowPos(ImVec2(vecScreenSize.x * 0.5f, vecScreenSize.y * 0.5f), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(ImVec2(500, 327), ImGuiCond_Always);
-		ImGui::Begin(Q_XOR("qo0 base"), &bMainOpened, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse);
+		ImGui::Begin(Q_XOR("Spluubcheat with qo0 base"), &bMainOpened, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse);
 		{
 			const ImVec2 vecPosition = ImGui::GetCursorScreenPos();
 			const float flWindowWidth = ImGui::GetWindowWidth();
@@ -136,10 +136,11 @@ void MENU::MainWindow(IDirect3DDevice9* pDevice)
 				CTab{ "rage", &T::RageBot },
 				CTab{ "legit", &T::LegitBot },
 				CTab{ "visuals", &T::Visuals },
-				CTab{ "miscellaneous", &T::Miscellaneous }
+				CTab{"miscellaneous",&T::Miscellaneous},
+				CTab{ "configs", &T::Configs}
 			};
 
-			T::Render(Q_XOR("main_tabs"), arrTabs, 4U, &iMainTab, style.Colors[ImGuiCol_TabActive]);
+			T::Render(Q_XOR("main_tabs"), arrTabs, 5U, &iMainTab, style.Colors[ImGuiCol_TabActive]);
 
 			ImGui::End();
 		}
@@ -602,121 +603,20 @@ void T::Miscellaneous()
 	}
 	ImGui::NextColumn();
 	{
-		static float flConfigChildSize = 0.f;
-		ImGui::BeginChild(Q_XOR("misc.config"), ImVec2(0, flConfigChildSize), true, ImGuiWindowFlags_MenuBar);
+		static float flConfigChildSize = 90.f;
+		ImGui::BeginChild(Q_XOR("misc.fun"), ImVec2(0, flConfigChildSize), true, ImGuiWindowFlags_MenuBar);
 		{
 			if (ImGui::BeginMenuBar())
 			{
-				ImGui::TextUnformatted(Q_XOR("configuration"));
+				ImGui::TextUnformatted(Q_XOR("fun"));
+
 				ImGui::EndMenuBar();
 			}
+			ImGui::Checkbox(Q_XOR("SpluubTag"), &C::Get<bool>(Vars.bMiscClantag));
 
-			ImGui::Columns(2, Q_XOR("#CONFIG"), false);
-			{
-				ImGui::PushItemWidth(-1);
-
-				// check selected configuration for magic value
-				if (nSelectedConfig == ~1U)
-				{
-					// set default configuration as selected on first use
-					for (std::size_t i = 0U; i < C::vecFileNames.size(); i++)
-					{
-						if (CRT::StringCompare(C::vecFileNames[i], Q_XOR(Q_CONFIGURATION_DEFAULT_FILE_NAME Q_CONFIGURATION_FILE_EXTENSION)) == 0)
-							nSelectedConfig = i;
-					}
-				}
-
-				if (ImGui::ListBoxHeader(Q_XOR("##config.list"), C::vecFileNames.size(), 5))
-				{
-					for (std::size_t i = 0U; i < C::vecFileNames.size(); i++)
-					{
-						// @todo: imgui cant work with wstring, wait for change to other gui
-						const wchar_t* wszFileName = C::vecFileNames[i];
-
-						char szFileName[MAX_PATH] = { };
-						CRT::StringUnicodeToMultiByte(szFileName, Q_ARRAYSIZE(szFileName), wszFileName);
-
-						if (ImGui::Selectable(szFileName, (nSelectedConfig == i)))
-							nSelectedConfig = i;
-					}
-
-					ImGui::ListBoxFooter();
-				}
-
-				ImGui::PopItemWidth();
-			}
-			ImGui::NextColumn();
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 0));
-				ImGui::PushItemWidth(-1);
-				if (ImGui::InputTextWithHint(Q_XOR("##config.file"), Q_XOR("create new..."), szConfigFile, sizeof(szConfigFile), ImGuiInputTextFlags_EnterReturnsTrue))
-				{
-					// check if the filename isn't empty
-					if (const std::size_t nConfigFileLength = CRT::StringLength(szConfigFile); nConfigFileLength > 0U)
-					{
-						// @todo: imgui cant work with wstring, wait for change to other gui
-						wchar_t wszConfigFile[MAX_PATH] = { };
-						CRT::StringMultiByteToUnicode(wszConfigFile, Q_ARRAYSIZE(wszConfigFile), szConfigFile, szConfigFile + nConfigFileLength);
-
-						if (C::CreateFile(wszConfigFile))
-							// set created config as selected @todo: dependent on current 'C::CreateFile' behaviour, generally it must be replaced by search
-							nSelectedConfig = C::vecFileNames.size() - 1U;
-
-						// clear string
-						CRT::MemorySet(szConfigFile, 0U, sizeof(szConfigFile));
-					}
-				}
-				if (ImGui::IsItemHovered())
-					ImGui::SetTooltip(Q_XOR("press enter to create new configuration"));
-
-				if (ImGui::Button(Q_XOR("save"), ImVec2(-1, 15)))
-					C::SaveFile(nSelectedConfig);
-
-				if (ImGui::Button(Q_XOR("load"), ImVec2(-1, 15)))
-					C::LoadFile(nSelectedConfig);
-
-				if (ImGui::Button(Q_XOR("remove"), ImVec2(-1, 15)))
-					ImGui::OpenPopup(Q_XOR("confirmation##config.remove"));
-
-				if (ImGui::Button(Q_XOR("refresh"), ImVec2(-1, 15)))
-					C::Refresh();
-
-				ImGui::PopItemWidth();
-				ImGui::PopStyleVar();
-			}
-			ImGui::Columns(1);
-
-			if (ImGui::BeginPopupModal(Q_XOR("confirmation##config.remove"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-			{
-				// @todo: imgui cant work with wstring, wait for change to other gui
-				char szCurrentConfig[MAX_PATH] = { };
-				CRT::StringUnicodeToMultiByte(szCurrentConfig, Q_ARRAYSIZE(szCurrentConfig), C::vecFileNames[nSelectedConfig]);
-
-				ImGui::Text(Q_XOR("are you sure you want to remove \"%s\" configuration?"), szCurrentConfig);
-				ImGui::Spacing();
-
-				if (ImGui::Button(Q_XOR("no"), ImVec2(30, 0)))
-					ImGui::CloseCurrentPopup();
-
-				ImGui::SameLine();
-
-				if (ImGui::Button(Q_XOR("yes"), ImVec2(30, 0)))
-				{
-					C::RemoveFile(nSelectedConfig);
-
-					// reset selected configuration index
-					nSelectedConfig = ~0U;
-
-					ImGui::CloseCurrentPopup();
-				}
-
-				ImGui::EndPopup();
-			}
-
-			flConfigChildSize = ImGui::GetCursorPosY() + style.ItemSpacing.y;
 			ImGui::EndChild();
 		}
-
+		
 		ImGui::BeginChild(Q_XOR("misc.colors"), ImVec2{ }, true, ImGuiWindowFlags_MenuBar);
 		{
 			if (ImGui::BeginMenuBar())
@@ -752,5 +652,131 @@ void T::Miscellaneous()
 		}
 	}
 	ImGui::Columns(1);
+
 }
+
+void T::Configs()
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	ImGui::NextColumn();
+	{
+		static float flConfigChildSize = 0.f;
+		ImGui::BeginChild(Q_XOR("misc.config"), ImVec2(0, flConfigChildSize), true, ImGuiWindowFlags_MenuBar);
+		{
+			if (ImGui::BeginMenuBar())
+			{
+				ImGui::TextUnformatted(Q_XOR("configuration"));
+				ImGui::EndMenuBar();
+			}
+
+			ImGui::Columns(2, Q_XOR("#CONFIG"), false);
+			{
+				ImGui::PushItemWidth(-1);
+
+				// check selected configuration for magic value
+				if (nSelectedConfig == ~1U)
+				{
+					// set default configuration as selected on first use
+					for (std::size_t i = 0U; i < C::vecFileNames.size(); i++)
+					{
+						if (CRT::StringCompare(C::vecFileNames[i], Q_XOR(Q_CONFIGURATION_DEFAULT_FILE_NAME Q_CONFIGURATION_FILE_EXTENSION)) == 0)
+							nSelectedConfig = i;
+					}
+				}
+
+				if (ImGui::ListBoxHeader(Q_XOR("##config.list"), C::vecFileNames.size(), 5))
+				{
+					for (std::size_t i = 0U; i < C::vecFileNames.size(); i++)
+					{
+						// @todo: imgui cant work with wstring, wait for change to other gui
+						const wchar_t* wszFileName = C::vecFileNames[i];
+
+						char szFileName[MAX_PATH] = {};
+						CRT::StringUnicodeToMultiByte(szFileName, Q_ARRAYSIZE(szFileName), wszFileName);
+
+						if (ImGui::Selectable(szFileName, (nSelectedConfig == i)))
+							nSelectedConfig = i;
+					}
+
+					ImGui::ListBoxFooter();
+				}
+
+				ImGui::PopItemWidth();
+			}
+			ImGui::NextColumn();
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 0));
+				ImGui::PushItemWidth(-1);
+				if (ImGui::InputTextWithHint(Q_XOR("##config.file"), Q_XOR("create new..."), szConfigFile, sizeof(szConfigFile), ImGuiInputTextFlags_EnterReturnsTrue))
+				{
+					// check if the filename isn't empty
+					if (const std::size_t nConfigFileLength = CRT::StringLength(szConfigFile); nConfigFileLength > 0U)
+					{
+						// @todo: imgui cant work with wstring, wait for change to other gui
+						wchar_t wszConfigFile[MAX_PATH] = {};
+						CRT::StringMultiByteToUnicode(wszConfigFile, Q_ARRAYSIZE(wszConfigFile), szConfigFile, szConfigFile + nConfigFileLength);
+
+						if (C::CreateFile(wszConfigFile))
+							// set created config as selected @todo: dependent on current 'C::CreateFile' behaviour, generally it must be replaced by search
+							nSelectedConfig = C::vecFileNames.size() - 1U;
+
+						// clear string
+						CRT::MemorySet(szConfigFile, 0U, sizeof(szConfigFile));
+					}
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip(Q_XOR("press enter to create new configuration"));
+
+				if (ImGui::Button(Q_XOR("save"), ImVec2(-1, 15)))
+					C::SaveFile(nSelectedConfig);
+
+				if (ImGui::Button(Q_XOR("load"), ImVec2(-1, 15)))
+					C::LoadFile(nSelectedConfig);
+
+				if (ImGui::Button(Q_XOR("remove"), ImVec2(-1, 15)))
+					ImGui::OpenPopup(Q_XOR("confirmation##config.remove"));
+
+				if (ImGui::Button(Q_XOR("refresh"), ImVec2(-1, 15)))
+					C::Refresh();
+
+				ImGui::PopItemWidth();
+				ImGui::PopStyleVar();
+			}
+			ImGui::Columns(1);
+
+			if (ImGui::BeginPopupModal(Q_XOR("confirmation##config.remove"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				// @todo: imgui cant work with wstring, wait for change to other gui
+				char szCurrentConfig[MAX_PATH] = {};
+				CRT::StringUnicodeToMultiByte(szCurrentConfig, Q_ARRAYSIZE(szCurrentConfig), C::vecFileNames[nSelectedConfig]);
+
+				ImGui::Text(Q_XOR("are you sure you want to remove \"%s\" configuration?"), szCurrentConfig);
+				ImGui::Spacing();
+
+				if (ImGui::Button(Q_XOR("no"), ImVec2(30, 0)))
+					ImGui::CloseCurrentPopup();
+
+				ImGui::SameLine();
+
+				if (ImGui::Button(Q_XOR("yes"), ImVec2(30, 0)))
+				{
+					C::RemoveFile(nSelectedConfig);
+
+					// reset selected configuration index
+					nSelectedConfig = ~0U;
+
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
+			}
+
+			flConfigChildSize = ImGui::GetCursorPosY() + style.ItemSpacing.y;
+			ImGui::EndChild();
+		}
+		ImGui::Columns(1);
+	}
+}
+
 #pragma endregion

@@ -8,7 +8,8 @@
 #include "core/convar.h"
 // used: gamerulesproxy
 #include "core/entitylistener.h"
-
+// used: SendClanTag
+#include "sdk.h"
 // used: interface handles
 #include "core/interfaces.h"
 // used: interface declarations
@@ -181,6 +182,10 @@ void F::OnMove(CCSPlayer* pLocal, CUserCmd* pCmd, bool* pbSendPacket, int nSeque
 		LAGCOMP::UpdateLatencySequences();
 	else
 		LAGCOMP::ClearLatencySequences();
+	if (C::Get<bool>(Vars.bMiscClantag))
+	{
+		SDK::SendClanTag("Spluubcheat", 0);
+	}
 
 	if (pLocal->IsAlive())
 	{
